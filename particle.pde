@@ -2,6 +2,7 @@ class ParticleOptions
 {
   float cap = 5;    // -1 is no cap
   int wrap = 1;     // 0 is mirror; 1 is wrap around
+  int sat = 0;      // saturation 0 to 255
 }
 
 class Particle
@@ -20,6 +21,16 @@ class Particle
     
     opt = new ParticleOptions();
   }
+  
+  Particle(ParticleOptions options)
+  {
+    pos = new PVector(random(width), random(height));
+    vel = new PVector(0,0);
+    acc = new PVector(0,0);
+    
+    opt = options;
+  }
+  
   
   Particle(PVector position)
   {
@@ -117,6 +128,7 @@ class Particle
   void redraw()
   {
     strokeWeight(2);
+    stroke(this.opt.sat);
     point(this.pos.x, this.pos.y);
   }
   
@@ -130,6 +142,11 @@ class Particle
 class FieldParticle extends Particle
 {
   VectorField field;
+  
+  FieldParticle(ParticleOptions options)
+  {
+    super(options);
+  }
   
   void setField(VectorField field)
   {

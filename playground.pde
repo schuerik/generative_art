@@ -10,24 +10,17 @@ void setup()
   size(1000, 1000);
   background(255);
   
-  field = new VectorField(fieldSize, 0.05, 0.01, 3, 5);
+  field = new VectorField(fieldSize, 0.04, 0.01, 3, 4);
   field.update();
   
   particles = new Particle[particleCount];
-  for (int i=0; i < particleCount; i++)
-  {
-    FieldParticle p = new FieldParticle();
-    p.setField(field);
-    particles[i] = p;
-  }
+  resetParticles();
 }
 
 void draw()
 {
-  if (frameCount % 500 == 0)
-  {
-    resetImage();  
-  }
+  //background(255);
+  field.update();
   
   for (int i=0; i < particleCount; i++)
   {
@@ -35,13 +28,13 @@ void draw()
   }
 }
 
-void resetImage()
+void resetParticles()
 {
-  background(255);
-  field.update();
   for (int i=0; i < particleCount; i++)
   {
-    FieldParticle p = new FieldParticle();
+    ParticleOptions opt = new ParticleOptions();
+    opt.sat = i % 2 == 0 ? 0 : 255;
+    FieldParticle p = new FieldParticle(opt);
     p.setField(field);
     particles[i] = p;
   }
