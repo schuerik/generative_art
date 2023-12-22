@@ -1,27 +1,21 @@
+import processing.sound.*;
 
 abstract class Field<T>
 {
   int size;
   float scale; 
   
-  float noiseScale; 
-  float noiseSpeed; 
-  float noiseLevel;
-  
   protected Object[][] field;
   
-  Field(int resolution, float coherence, float speed, float flux)
+  Field(int resolution)
   {
     this.size = resolution;
     this.scale = width / resolution;
-    this.noiseScale = coherence;
-    this.noiseSpeed = speed;
-    this.noiseLevel = flux;
     
     this.field = new Object[size][size];
   }
   
-  protected abstract T createElement(float value);
+  protected abstract T createElement(int x, int y);
   
   protected abstract void drawElement(int x, int y); 
   
@@ -31,11 +25,7 @@ abstract class Field<T>
     {
       for (int y=0; y < size; y++)
       {
-        float nx = x * noiseScale;
-        float ny = y * noiseScale;
-        float ns = noise(nx, ny, frameCount * noiseSpeed) * noiseLevel * TWO_PI;
-        
-        this.field[x][y] = this.createElement(ns);
+        this.field[x][y] = this.createElement(x, y);
       }
     }
   }
@@ -75,7 +65,88 @@ abstract class Field<T>
   
 }
 
-class NoiseField extends Field<Float>
+abstract class BaseNoiseField<T> extends Field<T>
+{  
+  float noiseScale; 
+  float noiseSpeed; 
+  float noiseLevel;
+  
+  BaseNoiseField(int resolution, float coherence, float speed, float flux)
+  {
+    super(resolution);
+    
+    this.noiseScale = coherence;
+    this.noiseSpeed = speed;
+    this.noiseLevel = flux;
+  }
+  
+  protected T createElement(int x, int y)
+  {
+    float nx = x * this.noiseScale;
+    float ny = y * this.noiseScale;
+    float ns = noise(nx, ny, frameCount * noiseSpeed) * noiseLevel * TWO_PI;
+        
+    return this.createElement(ns);
+  }
+  
+  protected abstract T createElement(float value);
+}
+
+class SoundField extends Field<Float>
+{
+  FFT fft;
+  AudioIn in;
+  int bands;
+  float[] spectrum;
+  int amp;
+  
+  SoundField(PApplet app, int resolution, int amplitude)
+  {
+    super(resolution);
+    
+    this.amp = amplitude;
+    
+    bands = resolution*resolution;
+    spectrum = new float[bands];
+    this.fft = new FFT(app, bands);
+    this.in = new AudioIn(app, 0);
+    in.start();
+    fft.input(in);
+  }
+  
+  void update()
+  {
+    fft.analyze(spectrum);
+    super.update();
+  }
+  
+  protected Float createElement(int x, int y)
+  {
+    return this.spectrum[x*y];
+  }
+  
+  protected void drawElement(int x, int y) 
+  {
+    int px = floor(x*this.scale + this.scale/2);
+    int py = floor(y*this.scale + this.scale/2);
+    
+    float value = this.get(x, y);
+    int val = floor(value * this.scale * 100 * this.amp);
+    
+    if (val == 0)
+      return;
+        
+    stroke(0);
+    strokeWeight(val);
+    push();
+    translate(px-25, py-25);
+    rotate(((frameCount%500)+1) / 500.f * -TWO_PI);
+    rect(0, 0, this.scale/sqrt(2), this.scale/sqrt(2));
+    pop();
+  }
+}
+
+class NoiseField extends BaseNoiseField<Float>
 {
   NoiseField(int resolution, float coherence, float speed, float flux)
   {
@@ -100,7 +171,7 @@ class NoiseField extends Field<Float>
   }
 }
 
-class VectorField extends Field<PVector>
+class VectorField extends BaseNoiseField<PVector>
 {
   float force;
   
