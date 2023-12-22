@@ -10,7 +10,7 @@ void setup()
   size(1000, 1000);
   background(255);
   
-  field = new VectorField(fieldSize, 0.04, 0.01, 3, 4);
+  field = new VectorField(fieldSize, 0.04, 0.01, 0.9, 4);
   field.update();
   
   particles = new Particle[particleCount];
@@ -33,7 +33,9 @@ void resetParticles()
   for (int i=0; i < particleCount; i++)
   {
     ParticleOptions opt = new ParticleOptions();
-    opt.sat = i % 2 == 0 ? 0 : 255;
+    opt.hue = floor(random(255));
+    opt.sat = floor(random(255));
+    opt.light = floor(random(255));
     FieldParticle p = new FieldParticle(opt);
     p.setField(field);
     particles[i] = p;

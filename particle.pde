@@ -2,7 +2,9 @@ class ParticleOptions
 {
   float cap = 5;    // -1 is no cap
   int wrap = 1;     // 0 is mirror; 1 is wrap around
+  int hue = 0;      // hue 0 to 255
   int sat = 0;      // saturation 0 to 255
+  int light = 0;    // lightness 0 to 255
 }
 
 class Particle
@@ -127,8 +129,9 @@ class Particle
   
   void redraw()
   {
-    strokeWeight(2);
-    stroke(this.opt.sat);
+    strokeWeight(15);
+    colorMode(HSB);
+    stroke(this.opt.hue, this.opt.sat, this.opt.light);
     point(this.pos.x, this.pos.y);
   }
   
