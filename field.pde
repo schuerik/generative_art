@@ -98,13 +98,15 @@ class SoundField extends Field<Float>
   AudioIn in;
   int bands;
   float[] spectrum;
-  int amp;
+  int lvl;
+  float std = 0;
+  float mean = 0;
   
-  SoundField(PApplet app, int resolution, int amplitude)
+  SoundField(PApplet app, int resolution, int level)
   {
     super(resolution);
     
-    this.amp = amplitude;
+    this.lvl = level;
     
     bands = resolution*resolution;
     spectrum = new float[bands];
@@ -117,6 +119,23 @@ class SoundField extends Field<Float>
   void update()
   {
     fft.analyze(spectrum);
+    this.mean = 0.0;
+    for (int i = 0; i < this.spectrum.length; i++) 
+    {
+      this.mean += this.spectrum[i];
+    }
+    this.mean /= this.bands;
+    
+    // The variance
+    float variance = 0;
+    for (int i = 0; i < this.spectrum.length; i++) 
+    {
+      variance += pow(this.spectrum[i] - this.mean, 2);
+    }
+    variance /= this.bands;
+    
+    // Standard Deviation
+    this.std = sqrt(variance);
     super.update();
   }
   
@@ -131,18 +150,39 @@ class SoundField extends Field<Float>
     int py = floor(y*this.scale + this.scale/2);
     
     float value = this.get(x, y);
-    int val = floor(value * this.scale * 100 * this.amp);
+    float dev = pow(value - this.mean, 2);
+    dev = floor(dev * 1000000000);
+    int val = floor(value * this.scale * 100 * this.lvl);
     
     if (val == 0)
       return;
         
-    stroke(0);
+    float rectSize = this.scale/sqrt(2);
+    
+    pushMatrix();
     strokeWeight(val);
-    push();
     translate(px-25, py-25);
-    rotate(((frameCount%500)+1) / 500.f * -TWO_PI);
-    rect(0, 0, this.scale/sqrt(2), this.scale/sqrt(2));
+    rectMode(CENTER);
+
+    // inner rectangle
+    pushMatrix();
+    push();
+    colorMode(HSB);
+    fill(floor(this.std*500000), 255, 255, dev);
+    rotate(((frameCount%500)+1) / 500.f * TWO_PI);
+    rect(0, 0, rectSize/sqrt(2), rectSize/sqrt(2));
     pop();
+    popMatrix();
+            
+    // outer rectangle
+    pushMatrix();
+    stroke(0);
+    fill(0, 0, 0, 0);
+    rotate(((frameCount%500)+1) / 500.f * -TWO_PI);
+    rect(0, 0, rectSize, rectSize);
+    popMatrix();
+    popMatrix();
+    
   }
 }
 
