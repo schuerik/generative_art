@@ -1,11 +1,13 @@
 class ParticleOptions
 {
-  float cap = 5;    // -1 is no cap
+  float cap = 1;    // -1 is no cap
   int wrap = 1;     // 0 is mirror; 1 is wrap around
   int hue = 0;      // hue 0 to 255
   int sat = 0;      // saturation 0 to 255
   int light = 0;    // lightness 0 to 255
-  int size = 10;     // size on canvas
+  int size = 2;     // size on canvas
+  int ttl = 50;     // number of updates to survive; negative numbers == infinite
+  int tail = 50;     // length of the particle tail
 }
 
 class Particle
@@ -15,6 +17,8 @@ class Particle
   PVector acc;
   
   ParticleOptions opt;
+  
+  ArrayList<PVector> track = new ArrayList<PVector>();
   
   Particle()
   {
@@ -105,6 +109,7 @@ class Particle
     else if (this.opt.wrap == 1)
     {
       this.pos.x = width + this.pos.x;
+      this.track.add(new PVector(0, this.pos.y));   
     }    
   }
   
@@ -116,7 +121,8 @@ class Particle
     }
     else if (this.opt.wrap == 1)
     {
-      this.pos.y = height + this.pos.y;     
+      this.pos.y = height + this.pos.y;
+      this.track.add(new PVector(this.pos.x, 0));     
     }    
   }
   
@@ -129,6 +135,7 @@ class Particle
     else if (this.opt.wrap == 1)
     {
       this.pos.x = this.pos.x - width;
+      this.track.add(new PVector(width-1, this.pos.y));
     }    
   }
   
@@ -141,6 +148,7 @@ class Particle
     else if (this.opt.wrap == 1)
     {
       this.pos.y = this.pos.y - height;
+      this.track.add(new PVector(this.pos.x, height-1));
     }
   }
   
@@ -157,6 +165,16 @@ class Particle
     // apply velocity
     this.pos.add(this.vel);
     this.fixEdges();
+    
+    // manage tail
+    this.track.add(this.pos.copy());
+    if (this.track.size() > this.opt.tail)
+      this.track.remove(0);
+  }
+  
+  boolean alive()
+  {
+    return this.opt.ttl != 0;
   }
   
   void redraw()
@@ -165,12 +183,20 @@ class Particle
     colorMode(HSB);
     stroke(this.opt.hue, this.opt.sat, this.opt.light);
     point(this.pos.x, this.pos.y);
+    
+    for(PVector coord : this.track)
+    {
+      point(coord.x, coord.y);
+    }
   }
   
   void update()
   {
+    if (!this.alive())
+      return;
     this.applyForce();
     this.redraw();
+    this.opt.ttl -= 1;
   }
 }
 
@@ -183,6 +209,11 @@ class FieldParticle extends Particle
     super(options);
   }
   
+  FieldParticle(PVector position, ParticleOptions options)
+  {
+    super(position, options);
+  }
+  
   void setField(VectorField field)
   {
     this.field = field;
@@ -190,73 +221,14 @@ class FieldParticle extends Particle
   
   void progress()
   {
-    //print(this.pos.x, this.pos.y, "\n");
     this.addForce(this.field.getByCoord(floor(this.pos.x), floor(this.pos.y)));
   }
   
   void update()
   {
+    if (!this.alive())
+      return;
     this.progress();   
     super.update();
-  }
-}
-
-class FieldPathParticle extends FieldParticle
-{
-  PVector prevPos;
-  
-  FieldPathParticle(ParticleOptions options)
-  {
-    super(options);
-  }
-  
-  void fixXNegativ()
-  {
-    super.fixXNegativ();
-    if (this.opt.wrap == 1)
-    {
-      this.prevPos.x = width-1;
-    }   
-  }
-  
-  void fixYNegativ()
-  {
-    super.fixYNegativ();
-    if (this.opt.wrap == 1)
-    {
-      this.prevPos.y = width-1;
-    }   
-  }
-  
-  void fixXTooBig()
-  {
-    super.fixXTooBig();
-    if (this.opt.wrap == 1)
-    {
-      this.prevPos.x = 0;
-    }   
-  }
-  
-  void fixYTooBig()
-  {
-    super.fixYTooBig();
-    if (this.opt.wrap == 1)
-    {
-      this.prevPos.y = 0;
-    }
-  }
-  
-  void update()
-  {
-    prevPos = this.pos.copy();
-    super.update();
-  }
-  
-  void redraw()
-  {
-    strokeWeight(this.opt.size);
-    colorMode(HSB);
-    stroke(this.opt.hue, this.opt.sat, this.opt.light);
-    line(this.prevPos.x, this.prevPos.y, this.pos.x, this.pos.y);
   }
 }

@@ -29,10 +29,23 @@ abstract class Field<T>
       }
     }
   }
+    
+  PVector getCoord(int x, int y)
+  {
+    int px = floor(x*this.scale + this.scale/2f);
+    int py = floor(y*this.scale + this.scale/2f);
+    
+    return new PVector(px, py);
+  }
   
   T get(int x, int y)
   {
     return (T) this.field[x][y];
+  }
+  
+  T getByCoord(PVector coord)
+  {
+    return this.getByCoord(floor(coord.x), floor(coord.y));
   }
   
   T getByCoord(int px, int py)
@@ -145,23 +158,21 @@ class SoundField extends Field<Float>
   }
   
   protected void drawElement(int x, int y) 
-  {
-    int px = floor(x*this.scale + this.scale/2);
-    int py = floor(y*this.scale + this.scale/2);
-    
+  {   
     float value = this.get(x, y);
     float dev = pow(value - this.mean, 2);
     dev = floor(dev * 1000000000);
     int val = floor(value * this.scale * 100 * this.lvl);
     
-    if (val == 0)
+    if (val < 1)
       return;
         
     float rectSize = this.scale/sqrt(2);
+    PVector coords = this.getCoord(x, y);
     
     pushMatrix();
     strokeWeight(val);
-    translate(px-25, py-25);
+    translate(coords.x-25, coords.y-25);
     rectMode(CENTER);
 
     // inner rectangle
@@ -181,8 +192,7 @@ class SoundField extends Field<Float>
     rotate(((frameCount%500)+1) / 500.f * -TWO_PI);
     rect(0, 0, rectSize, rectSize);
     popMatrix();
-    popMatrix();
-    
+    popMatrix();    
   }
 }
 
@@ -200,14 +210,12 @@ class NoiseField extends BaseNoiseField<Float>
   
   protected void drawElement(int x, int y) 
   {
-    int px = floor(x*this.scale + this.scale/2);
-    int py = floor(y*this.scale + this.scale/2);
-    
+    PVector coords = this.getCoord(x, y);  
     float noise = this.get(x, y);
         
     stroke(0);
     strokeWeight(floor(noise * this.scale/20));
-    point(px, py);
+    point(coords.x, coords.y);
   }
 }
 
@@ -230,8 +238,7 @@ class VectorField extends BaseNoiseField<PVector>
  
   protected void drawElement(int x, int y) 
   {
-    int px = floor(x*this.scale + this.scale/2);
-    int py = floor(y*this.scale + this.scale/2);
+    PVector coords = this.getCoord(x, y); 
     
     PVector vec = this.get(x, y).copy();
     float arrowScale = this.scale / 10;
@@ -241,7 +248,7 @@ class VectorField extends BaseNoiseField<PVector>
     stroke(0);
     strokeWeight(1);
     fill(0);
-    translate(px, py);
+    translate(coords.x, coords.y);
     line(-vec.x/2, -vec.y/2, vec.x/2, vec.y/2);
     rotate(vec.heading());
     translate(vec.mag()/2 - arrowScale, 0);
